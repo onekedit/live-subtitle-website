@@ -90,8 +90,16 @@ async function start() {
     reader.readAsDataURL(e.data);
   };
 
-  recorder.start();
-  chunkTimer = setInterval(() => recorder.stop(), 5000);
+  
+recorder.start();
+
+chunkTimer = setInterval(() => {
+  if (recorder.state === "recording") {
+    recorder.stop();
+    recorder.start();
+  }
+}, 5000);
+
 }
 
 function stop() {
