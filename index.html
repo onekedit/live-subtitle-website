@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Live Video Subtitles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+}
+h1 { text-align: center; }
+button, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+#subtitleBox {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  padding: 15px 25px;
+  border-radius: 8px;
+  font-size: 18px;
+  max-width: 90%;
+  text-align: center;
+  display: none;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Live Video Subtitles</h1>
+
+<select id="language">
+  <option value="English">English</option>
+  <option value="Hindi">Hindi</option>
+  <option value="Japanese">Japanese</option>
+  <option value="Spanish">Spanish</option>
+</select>
+
+<button onclick="start()">Start Subtitles</button>
+<button onclick="stop()">Stop</button>
+
+<div id="subtitleBox">Listening...</div>
+
+<script>
+const BACKEND_URL =
+  "https://kkjaykk-video-subtitle-backend.hf.space/run/predict";
+
+let recorder;
+let stream;
+let chunkTimer;
+
+async function start() {
+  stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: true
+  });
+
+  const subtitleBox = document.getElementById("subtitleBox");
+  subtitleBox.style.display = "block";
+  subtitleBox.innerText = "Listening...";
+
+  recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+  recorder.ondataavailable = async (e) => {
+    if (e.data.size === 0) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: [reader.result, document.getElementById("language").value]
+        })
+      });
+      const result = await response.json();
+      subtitleBox.innerText = result.data?.[0] || "...";
+    };
+    reader.readAsDataURL(e.data);
+  };
+
+  recorder.start();
+  chunkTimer = setInterval(() => recorder.stop(), 5000);
+}
+
+function stop() {
+  recorder?.stop();
+  stream?.getTracks().forEach(t => t.stop());
+  clearInterval(chunkTimer);
+  document.getElementById("subtitleBox").style.display = "none";
+}
+</script>
+
+</body>
+</html>
