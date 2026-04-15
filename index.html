@@ -56,9 +56,11 @@ button, select {
 const BACKEND_URL =
   "https://kkjaykk-video-subtitle-backend.hf.space/run/predict";
 
-let recorder;
-let stream;
-let chunkTimer;
+
+window.recorder = null;
+window.stream = null;
+window.chunkTimer = null;
+``
 
 async function start() {
   stream = await navigator.mediaDevices.getDisplayMedia({
@@ -70,9 +72,9 @@ async function start() {
   subtitleBox.style.display = "block";
   subtitleBox.innerText = "Listening...";
 
-  recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+  window.recorder = new MediaRecorder(window.stream, { mimeType: "audio/webm" });
 
-  recorder.ondataavailable = async (e) => {
+  window.recorder.ondataavailable = async (e) => {
     if (e.data.size === 0) return;
 
     const reader = new FileReader();
@@ -91,12 +93,12 @@ async function start() {
   };
 
   
-recorder.start();
+window.recorder.start();
 
 chunkTimer = setInterval(() => {
   if (recorder.state === "recording") {
-    recorder.stop();
-    recorder.start();
+    window.recorder.stop();
+    window.recorder.start();
   }
 }, 5000);
 
